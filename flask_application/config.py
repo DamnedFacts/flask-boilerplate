@@ -3,7 +3,7 @@
 # http://flask.pocoo.org/docs/config/#development-production
 
 class Config(object):
-    SECRET_KEY = 'vr66hI5ejftO3U3gpMogDMsYJIZOnVPF1RsWFm8c16cw0zGMls'
+    SECRET_KEY = ''
     SITE_NAME = 'example.com'
     MEMCACHED_SERVERS = ['localhost:11211']
     SYS_ADMINS = ['foo@example.com']
