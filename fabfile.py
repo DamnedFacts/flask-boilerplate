@@ -1,30 +1,36 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''\
+'''
 Run 'fab --list' to see list of available commands.
 
 References:
 # http://docs.fabfile.org/en/1.0.1/usage/execution.html#how-host-lists-are-constructed
 '''
 
+from __future__ import with_statement
 import platform
 assert ('2','6') <= platform.python_version_tuple() < ('3','0')
 
 import os
-import datetime
-import urllib2
 import sh
+import sys
 
-from fabric.api import env, local, sudo, run
+from fabric.api import env, local, sudo, run, task
 from fabric.utils import puts, warn
-
-from fabulous.color import red, green, blue
+from fabric.api import local, settings, abort, run, cd
+from fabric.contrib.console import confirm
+from fabric.colors import red, green, blue
 
 APP_NAME = "flask_application"
 PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
 SITE_NAME = "example.com"
 
+env.hosts = ['user@remotehost']
+code_dir = '/path/to/repos/destination'
+sys.path.append(PROJ_DIR)
+
+"""
 def _transfer_files(src, dst, ssh_port=None):
     ssh_port = ssh_port or 22
     assert os.getenv('SSH_AUTH_SOCK') is not None # Ensure ssh-agent is running
@@ -33,11 +39,35 @@ def _transfer_files(src, dst, ssh_port=None):
     if dst.endswith('/'):
         dst = dst[:-1]
     local('rsync -avh --delete-before --copy-unsafe-links -e "ssh -p {0}" {1} {2}'.format(ssh_port, src, dst), capture=False)
+"""
 
 
-def init(domain_name=SITE_NAME):
-    '''Initialize with this domain name.'''
-    print green(u"Initializing...")
+@task
+def pre_deploy():
+     '''Add, commit and push the Git repo before final deployment.'''
+     local("git add -p && git commit")
+     local("git push")
+
+@task
+def deploy():
+    global code_dir
+    '''Final deployment of the application'''
+    with cd(code_dir):
+        run("git pull")
+        run("touch flask_application.wsgi")
+        #run("sudo apachectl restart")
+
+@task
+def init(site_name=SITE_NAME):
+    '''Call env_setup, env_init, and skeletonize for one-step init'''
+    env_setup()
+    env_init(site_name=SITE_NAME)
+    skeletonize()
+
+@task
+def env_init(site_name=SITE_NAME):
+    '''Initialize with this site hostname.'''
+    print green(u"Initializing new site configuration...")
 
 
     #
@@ -62,12 +92,12 @@ def init(domain_name=SITE_NAME):
 
 
     #
-    # Set the site name, the user defined domain name
+    # Set the site name, the user defined site hostname
     #
-    print blue("Configuring the SITE_NAME '{0}'.".format(domain_name))
+    print blue("Configuring the SITE_NAME '{0}'.".format(site_name))
     try:
         sh.sed("-i.bak",
-               "-es/SITE_NAME\s*=\s*.*/SITE_NAME = '{0}'/g".format(domain_name),
+               "-es/SITE_NAME\s*=\s*.*/SITE_NAME = '{0}'/g".format(site_name),
                "{0}/config.py".format(APP_NAME))
         sh.rm(f="config.py.bak")
     except sh.ErrorReturnCode:
@@ -75,15 +105,14 @@ def init(domain_name=SITE_NAME):
         exit(1)
 
 
-
-
+@task
 def env_setup():
-    '''Initialize environment.'''
+    '''Initialize environment with requisite Python modules.'''
     print green("Installing requisite modules")
 
     # Install our requistite modules for the website.
     from setup import requires
-    with req in requires:
+    for req in requires:
         sh.pip("install", req)
 
     import platform
@@ -91,7 +120,7 @@ def env_setup():
         sh.pip("install", "unittest2")
 
 
-
+@task
 def skeletonize():
     '''Update Skeleton HTML5-Boilerplate.'''
     print green("Skeletonizing the project directory...")
@@ -124,27 +153,28 @@ def skeletonize():
 
 
 
+@task
 def console():
-    local('env DEV=yes python -i play.py', capture=False)
+    '''Load the application in an interactive console.'''
+    local('env DEV=yes python -i runserver.py', capture=False)
 
-
+@task
 def server():
     '''Run the dev server'''
     os.chdir(PROJ_DIR)
-    sh.python("runserver.py")
-    #local('env DEV=yes python runserver.py', capture=False)
+    local('env DEV=yes python runserver.py', capture=False)
 
+@task
 def test():
     '''Run the test suite'''
     local('env TEST=yes python tests.py', capture=False)
 
+@task
 def clean():
     '''Clear the cached .pyc files.'''
-    local("find . -iname '*.pyc' -exec rm -v {} \;", capture=False)
-
-
-
-
+    local("find . \( -iname '*.pyc' -o -name '*~' \) -exec rm -v {} \;", capture=False)
+"""
+@task
 def server_setup():
     '''Setup the server environment.'''
     global SITE_NAME
@@ -154,45 +184,4 @@ def server_setup():
     run('mkdir -p {0}'.format(remote_dir))
     _transfer_files(local_dir, env.host + ':' + remote_dir, ssh_port=env.port)
     run('cd {0} && bash setup/server_setup.bash {1}'.format(remote_dir, SITE_NAME))
-
-
-def deploy():
-    '''Sync code from here to the servers'''
-    global env
-    global SITE_NAME
-
-    # Two separate calculations because Mac has HOME=/Users/swaroop and
-    # Linux has HOME=/home/swaroop and therefore cannot use the same dirname.
-    local_dir = os.path.join(os.getenv('HOME'), 'web', SITE_NAME, 'private', SITE_NAME)
-    remote_dir = os.path.join('/home', os.getlogin(), 'web', SITE_NAME, 'private', SITE_NAME)
-    _transfer_files(local_dir, env.host + ':' + remote_dir, ssh_port=env.port)
-    sudo('apache2ctl graceful')
-    try:
-        urllib2.urlopen('http://' + env.host_string)
-    except urllib2.HTTPError as x:
-        warn(colors.red("Failed! Code deployment was a disaster. Apache is throwing {0}.".format(x)))
-        showlogs()
-        return
-    puts(colors.magenta('Success! The {0} server has been updated.'.format(env.host_string)))
-
-
-def showlogs():
-    '''Show logs of the Apache/mod_wsgi server.'''
-
-    def tail_file_if_exists(path):
-        sudo('if [[ -f {0} ]]; then tail -20 {0}; fi'.format(path))
-
-    log_dir = os.path.join('/home', os.getlogin(), 'web', SITE_NAME, 'log')
-    today = datetime.datetime.today().strftime("%Y%m%d")
-    yesterday = (datetime.datetime.today() - datetime.timedelta(days=1)).strftime("%Y%m%d")
-
-    puts(colors.magenta("flask log - today"))
-    tail_file_if_exists('{0}/error.{1}.log'.format(log_dir, today))
-    puts(colors.magenta("flask log - yesterday"))
-    tail_file_if_exists('{0}/error.{1}.log'.format(log_dir, yesterday))
-
-    puts(colors.magenta("apache log"))
-    tail_file_if_exists('/var/log/apache2/error.log')
-
-
-
+"""
