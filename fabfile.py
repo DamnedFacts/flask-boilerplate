@@ -70,6 +70,8 @@ def env_init(site_name=SITE_NAME):
     '''Initialize with this site hostname.'''
     print green(u"Initializing new site configuration...")
 
+    print "hello"
+    print site_name
     #
     # Generate secret key and update config file
     #
