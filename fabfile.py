@@ -62,7 +62,7 @@ def init(site_name=SITE_NAME):
     '''Call env_setup, env_init, and skeletonize for one-step init'''
     print green(u"Call env_setup, env_init, and skeletonize for one-step init:")
     env_setup()
-    env_init(site_name=SITE_NAME)
+    env_init(site_name=site_name)
     skeletonize()
 
 @task
@@ -70,8 +70,6 @@ def env_init(site_name=SITE_NAME):
     '''Initialize with this site hostname.'''
     print green(u"Initializing new site configuration...")
 
-    print "hello"
-    print site_name
     #
     # Generate secret key and update config file
     #
