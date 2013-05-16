@@ -14,6 +14,7 @@ requires = [
     'formencode',
     'Flask-SQLAlchemy',
     'flask-markdown',
+    'blinker',
     ]
 
 if __name__ == '__main__':
