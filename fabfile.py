@@ -60,6 +60,7 @@ def deploy():
 @task
 def init(site_name=SITE_NAME):
     '''Call env_setup, env_init, and skeletonize for one-step init'''
+    print green(u"Call env_setup, env_init, and skeletonize for one-step init:")
     env_setup()
     env_init(site_name=SITE_NAME)
     skeletonize()
@@ -78,7 +79,7 @@ def env_init(site_name=SITE_NAME):
     CHARS = string.letters + string.digits
     SECRET_KEY = "".join([random.choice(CHARS) for i in range(50)])
 
-    print blue("Configuring the secret key.")
+    print blue("Configuring the secret key...")
     os.chdir(PROJ_DIR)
     try:
         sh.sed("-i.bak",
@@ -107,7 +108,7 @@ def env_init(site_name=SITE_NAME):
 @task
 def env_setup():
     '''Initialize environment with requisite Python modules.'''
-    print green("Installing requisite modules")
+    print green("Installing requisite modules...")
 
     # Install our requistite modules for the website.
     from setup import requires
