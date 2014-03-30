@@ -83,7 +83,7 @@ def env_init(site_name=SITE_NAME):
     os.chdir(PROJ_DIR)
     try:
         sh.sed("-i.bak",
-               "-es/SECRET_KEY\s*=\s*.*/SECRET_KEY = '{0}'/g".format(SECRET_KEY),
+               "-e s/SECRET_KEY *= *.*/SECRET_KEY = '{0}'/g".format(SECRET_KEY),
                "{0}/config.py".format(APP_NAME))
         sh.rm(f="config.py.bak")
     except sh.ErrorReturnCode:
@@ -111,9 +111,7 @@ def env_setup():
     print green("Installing requisite modules...")
 
     # Install our requistite modules for the website.
-    from setup import requires
-    for req in requires:
-        sh.pip("install", req)
+    sh.pip("install", r="requirements.txt")
 
     import platform
     if platform.python_version_tuple() < (2,7):
