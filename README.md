@@ -15,7 +15,7 @@ are developing with the proper software.
 To do development work on a new website, run the following commands from
 the root directory of your cloned site to get started:
 
--   `fab init:domain_name=<sitename>`
+-   `fab init:site_name=<sitename>`
     - Where "`<sitename>`" is replaced with the hostname of your new site      
 -   `fab skeletonize`
     - Installs Skeleton and JQuery, patching the base templates along the way.
