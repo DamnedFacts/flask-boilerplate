@@ -85,8 +85,8 @@ def env_init(site_name=SITE_NAME):
     print(blue("Configuring the secret key..."))
     os.chdir(PROJ_DIR)
     try:
-        sh.sed("-i ''",
-               "-e s/SECRET_KEY *=.*/SECRET_KEY = '{0}'/g".format(SECRET_KEY),
+        sh.sed("-i ",
+               "s/SECRET_KEY *=.*/SECRET_KEY = '{0}'/g".format(SECRET_KEY),
                "{0}/config.py".format(APP_NAME))
     except sh.ErrorReturnCode:
         print(red("Could not configure SECRET_KEY for config.py"))
@@ -97,10 +97,9 @@ def env_init(site_name=SITE_NAME):
     #
     print(blue("Configuring the SITE_NAME '{0}'.".format(site_name)))
     try:
-        sh.sed("-i ''", 
-               "-e s/SITE_NAME *=.*/SITE_NAME = '{0}'/g".format(site_name),
+        sh.sed("-i ",
+               "s/SITE_NAME *=.*/SITE_NAME = '{0}'/g".format(site_name),
                "{0}/config.py".format(APP_NAME))
-        sh.rm(f="config.py.bak")
     except sh.ErrorReturnCode:
         print(red("Could not configure SITE_NAME for config.py"))
         exit(1)
@@ -136,7 +135,6 @@ def skeletonize():
     sh.rsync("-av", "index.html", 
              "{0}/{1}/templates/base_t.html".format(PROJ_DIR, APP_NAME))
     os.chdir(PROJ_DIR)
-    sh.rm("-r", PROJ_DIR + "/Skeleton")
 
     # Patch the base template with templating tags
     print(blue("Patching the base template."))
