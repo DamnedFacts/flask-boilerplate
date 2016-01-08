@@ -1,153 +1,52 @@
---- base_t.html.orig	2013-01-24 00:18:02.000000000 -0500
-+++ base_t.html	2013-01-24 00:15:06.000000000 -0500
-@@ -1,37 +1,96 @@
- <!DOCTYPE html>
-+{% macro render_field(field, labelclass='') %}
-+{% if labelclass %}
-+<dt> {{ field.label }}<span class={{ labelclass }}>*</span>
-+{% else %}
-+<dt> {{ field.label }}
-+{% endif %}
-+
-+<dd>{{ field(**kwargs)|safe }}
-+{% if field.errors %}
-+<ul class=errors>
-+    {% for error in field.errors %}
-+    <li>{{ error }}</li>
-+    {% endfor %}
-+</ul>
-+{% endif %}
-+</dd>
-+{% endmacro %}
-+
-+{% with messages = get_flashed_messages() %}
-+  {% if messages %}
-+    <ul class=flashes>
-+    {% for message in messages %}
-+      <li>{{ message }}</li>
-+    {% endfor %}
-+    </ul>
-+  {% endif %}
-+{% endwith %}
-+
-+{% macro render_msg() %}
-+    {% if info %}
-+    <p class=info><strong>Info:</strong> {{ info }}
-+    {% endif %}
-+
-+    {% if success %}
-+    <p class=success><strong>Success:</strong> {{ success }}
-+    {% endif %}
-+
-+    {% if warning %}
-+    <p class=warning><strong>Warning:</strong> {{ warning }}
-+    {% endif %}
-+
-+    {% if error %}
-+    <p class=error><strong>Error:</strong> {{ error }}
-+    {% endif %}
-+
-+    {% if validation %}
-+    <p class=validation><strong>Validation:</strong> {{ validation }}
-+    {% endif %}
-+{% endmacro %}
-+
- <!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
- <!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
- <!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
- <!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
--<head>
+--- base_t.html	2016-01-08 13:25:27.000000000 -0500
++++ base_t.html.orig	2016-01-08 13:32:40.000000000 -0500
+@@ -5,7 +5,7 @@
+   <!-- Basic Page Needs
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+   <meta charset="utf-8">
+-  <title>Your page title here :)</title>
++  <title>{{ site_title }} | {{ page_title }}</title>
+   <meta name="description" content="">
+   <meta name="author" content="">
  
--	<!-- Basic Page Needs
--  ================================================== -->
-+<head>
-+    <!-- Basic Page Needs
-+    ================================================== -->
- 	<meta charset="utf-8">
--	<title>Your Page Title Here :)</title>
--	<meta name="description" content="">
--	<meta name="author" content="">
--
--	<!-- Mobile Specific Metas
--  ================================================== -->
--	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
--
--	<!-- CSS
--  ================================================== -->
--	<link rel="stylesheet" href="stylesheets/base.css">
--	<link rel="stylesheet" href="stylesheets/skeleton.css">
--	<link rel="stylesheet" href="stylesheets/layout.css">
--
--	<!--[if lt IE 9]>
--		<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
--	<![endif]-->
--
--	<!-- Favicons
--	================================================== -->
--	<link rel="shortcut icon" href="images/favicon.ico">
--	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
--	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
--	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
-+ 	<title>{{ site_title }} | {{ page_title }}</title>
-+ 	<meta name="description" content="">
-+ 	<meta name="author" content="">
-+
-+    <!-- Mobile Specific Metas
-+    ================================================== -->
-+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-+
-+    <!-- CSS
-+    ================================================== -->
-+    <link rel="stylesheet" href="{{ url_for('static', filename = 'stylesheets/base.css')}}">
-+    <link rel="stylesheet" href="{{ url_for('static', filename = 'stylesheets/skeleton.css')}}">
-+    <link rel="stylesheet" href="{{ url_for('static', filename = 'stylesheets/layout.css')}}">
-+
-+    <!--[if lt IE 9]>
-+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-+    <![endif]-->
-+
-+    <!-- Favicons
-+    ================================================== -->
-+    <link rel="shortcut icon" href="{{ url_for('static', filename = 'images/favicon.ico')}}">
-+    <link rel="apple-touch-icon" href="{{ url_for('static', filename = 'images/apple-touch-icon.png')}}">
-+    <link rel="apple-touch-icon" sizes="72x72" href="{{ url_for('static', filename = 'images/apple-touch-icon-72x72.png')}}">
-+    <link rel="apple-touch-icon" sizes="114x114" href="{{ url_for('static', filename = 'images/apple-touch-icon-114x114.png')}}">
-+
-+
-+	<!-- Javascript
-+    ================================================== -->
-+    <script src="{{ url_for('static', filename='js/jquery-1.9.0.min.js') }}"></script>
-+
-+	<!-- Template block additions
-+    ================================================== -->
-+    {% block header %}{% endblock %}
+@@ -19,25 +19,38 @@
  
+   <!-- CSS
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+-  <link rel="stylesheet" href="css/normalize.css">
+-  <link rel="stylesheet" href="css/skeleton.css">
++  <link rel="stylesheet" href="{{ url_for('static', filename = 'css/skeleton.css')}}">
++  <link rel="stylesheet" href="{{ url_for('static', filename = 'css/layout.css')}}">
++  <link rel="stylesheet" href="{{ url_for('static', filename = 'css/base.css')}}">
+ 
+   <!-- Favicon
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+   <link rel="icon" type="image/png" href="images/favicon.png">
+ 
++  <!-- Javascript
++  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
++  <script src="{{ url_for('static', filename='js/jquery-1.9.0.min.js') }}"></script>
++
++  <!-- Template block additions
++  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
++  {% block header %}
++  <!-- Additions here -->
++  {% endblock %}
++
  </head>
  <body>
-@@ -43,8 +102,9 @@
  
- 	<!-- Delete everything in this .container and get started on your own site! -->
- 
--	<div class="container">
--		<div class="sixteen columns">
-+    <div class="container">
-+        {% block content %}
-+        <div class="sixteen columns">
- 			<h1 class="remove-bottom" style="margin-top: 40px">Skeleton</h1>
- 			<h5>Version 1.2</h5>
- 			<hr />
-@@ -66,11 +126,11 @@
- 			<h3>Docs &amp; Support</h3>
- 			<p>The easiest way to really get started with Skeleton is to check out the full docs and info at <a href="http://www.getskeleton.com">www.getskeleton.com.</a>. Skeleton is also open-source and has a <a href="https://github.com/dhgamache/skeleton">project on git</a>, so check that out if you want to report bugs or create a pull request. If you have any questions, thoughts, concerns or feedback, please don't hesitate to email me at <a href="mailto:hi@getskeleton.com">hi@getskeleton.com</a>.</p>
- 		</div>
--
-+        {% endblock %}
- 	</div><!-- container -->
- 
+   <!-- Primary Page Layout
+   –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+   <div class="container">
++    {% block content %}
+     <div class="row">
+       <div class="one-half column" style="margin-top: 25%">
+         <h4>Basic Page</h4>
+         <p>This index.html page is a placeholder with the CSS, font and favicon. It's just waiting for you to add some content! If you need some help hit up the <a href="http://www.getskeleton.com">Skeleton documentation</a>.</p>
+       </div>
+     </div>
++    {% endblock %}
+   </div>
  
  <!-- End Document
- ================================================== -->
- </body>
--</html>
-\ No newline at end of file
-+</html>

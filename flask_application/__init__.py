@@ -13,26 +13,32 @@ else:
     app.config.from_object('flask_application.config.ProductionConfig')
     app.logger.info("Config: Production")
 
+
 # Source: http://www.jeffff.com/serving-media-in-the-flask-local-dev-server:w
 def serve_static(sender):
-     if app.config['DEBUG']:
-         app.wsgi_app = SharedDataMiddleware(app.wsgi_app,
-                        {'/':os.path.join(os.path.dirname(__file__), 'static') })
+    if app.config['DEBUG']:
+        app.wsgi_app = SharedDataMiddleware(app.wsgi_app,
+                                            {'/': os.path.join(
+                                                os.path.dirname(__file__),
+                                                'static')})
 
 request_started.connect(serve_static, app)
 
 
 @app.before_request
 def before_request():
-       session["debug"] = app.debug
+    session["debug"] = app.debug
+
 
 @app.after_request
 def after_request(response):
     return response
 
+
 @app.context_processor
 def inject_site_defaults():
-        return dict(site_title="<YOUR SITE TITLE HERE>")
+        return dict(site_title=app.config['SITE_NAME'])
+
 
 @app.route('/')
 def page_home():

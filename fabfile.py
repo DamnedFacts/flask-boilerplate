@@ -10,16 +10,14 @@ References:
 
 from __future__ import with_statement
 import platform
-assert ('2','6') <= platform.python_version_tuple() < ('3','0')
+assert ('2', '6') <= platform.python_version_tuple() < ('3', '0')
 
 import os
 import sh
 import sys
 
-from fabric.api import env, local, sudo, run, task
-from fabric.utils import puts, warn
-from fabric.api import local, settings, abort, run, cd
-from fabric.contrib.console import confirm
+from fabric.api import env, local, run, task
+from fabric.api import cd
 from fabric.colors import red, green, blue
 
 APP_NAME = "flask_application"
@@ -38,15 +36,17 @@ def _transfer_files(src, dst, ssh_port=None):
         src = src + '/'
     if dst.endswith('/'):
         dst = dst[:-1]
-    local('rsync -avh --delete-before --copy-unsafe-links -e "ssh -p {0}" {1} {2}'.format(ssh_port, src, dst), capture=False)
+    local('rsync -avh --delete-before --copy-unsafe-links -e'
+          '"ssh -p {0}" {1} {2}'.format(ssh_port, src, dst), capture=False)
 """
 
 
 @task
 def pre_deploy():
-     '''Add, commit and push the Git repo before final deployment.'''
-     local("git add -p && git commit")
-     local("git push")
+    '''Add, commit and push the Git repo before final deployment.'''
+    local("git add -p && git commit")
+    local("git push")
+
 
 @task
 def deploy():
@@ -55,20 +55,23 @@ def deploy():
     with cd(code_dir):
         run("git pull")
         run("touch flask_application.wsgi")
-        #run("sudo apachectl restart")
+        # run("sudo apachectl restart")
+
 
 @task
 def init(site_name=SITE_NAME):
     '''Call env_setup, env_init, and skeletonize for one-step init'''
-    print green(u"Call env_setup, env_init, and skeletonize for one-step init:")
+    print(green("Call env_setup, env_init, and"
+                "skeletonize for one-step init:"))
     env_setup()
     env_init(site_name=site_name)
     skeletonize()
 
+
 @task
 def env_init(site_name=SITE_NAME):
     '''Initialize with this site hostname.'''
-    print green(u"Initializing new site configuration...")
+    print(green("Initializing new site configuration..."))
 
     #
     # Generate secret key and update config file
@@ -79,7 +82,7 @@ def env_init(site_name=SITE_NAME):
     CHARS = string.letters + string.digits
     SECRET_KEY = "".join([random.choice(CHARS) for i in range(50)])
 
-    print blue("Configuring the secret key...")
+    print(blue("Configuring the secret key..."))
     os.chdir(PROJ_DIR)
     try:
         sh.sed("-i.bak",
@@ -87,68 +90,67 @@ def env_init(site_name=SITE_NAME):
                "{0}/config.py".format(APP_NAME))
         sh.rm(f="config.py.bak")
     except sh.ErrorReturnCode:
-        print red("Could not configure SECRET_KEY for config.py")
+        print(red("Could not configure SECRET_KEY for config.py"))
         exit(1)
-
 
     #
     # Set the site name, the user defined site hostname
     #
-    print blue("Configuring the SITE_NAME '{0}'.".format(site_name))
+    print(blue("Configuring the SITE_NAME '{0}'.".format(site_name)))
     try:
         sh.sed("-i.bak",
                "-es/SITE_NAME\s*=\s*.*/SITE_NAME = '{0}'/g".format(site_name),
                "{0}/config.py".format(APP_NAME))
         sh.rm(f="config.py.bak")
     except sh.ErrorReturnCode:
-        print red("Could not configure SITE_NAME for config.py")
+        print(red("Could not configure SITE_NAME for config.py"))
         exit(1)
 
 
 @task
 def env_setup():
     '''Initialize environment with requisite Python modules.'''
-    print green("Installing requisite modules...")
+    print(green("Installing requisite modules..."))
 
     # Install our requistite modules for the website.
     sh.pip("install", r="requirements.txt")
 
     import platform
-    if platform.python_version_tuple() < (2,7):
+    if platform.python_version_tuple() < (2, 7):
         sh.pip("install", "unittest2")
 
 
 @task
 def skeletonize():
     '''Update Skeleton HTML5-Boilerplate.'''
-    print green("Skeletonizing the project directory...")
+    print(green("Skeletonizing the project directory..."))
 
     # Skeleton
-    print blue("Installing skeleton HTML5 Boilerplate.")
+    print(blue("Installing skeleton HTML5 Boilerplate."))
     os.chdir(PROJ_DIR)
     sh.git.submodule.update(init=True)
 
     os.chdir(PROJ_DIR + "/skeleton")
     sh.git.pull("origin", "master")
-    sh.rsync("-av", "images", "{0}/{1}/static/".format(PROJ_DIR,APP_NAME))
-    sh.rsync("-av", "stylesheets",  "{0}/{1}/static/".format(PROJ_DIR,APP_NAME))
-    sh.rsync("-av", "index.html",  "{0}/{1}/templates/base_t.html".format(PROJ_DIR,APP_NAME))
+    sh.rsync("-av", "images", "{0}/{1}/static/".format(PROJ_DIR, APP_NAME))
+    sh.rsync("-av", "css", "{0}/{1}/static/".format(PROJ_DIR, APP_NAME))
+    sh.rsync("-av", "index.html", "{0}/{1}/templates/base_t.html".format(PROJ_DIR, APP_NAME))
     os.chdir(PROJ_DIR)
+    sh.rm("-r", PROJ_DIR + "/skeleton")
 
     # Patch the base template with templating tags
-    print blue("Patching the base template.")
+    print(blue("Patching the base template."))
     os.chdir(PROJ_DIR + "/{0}/templates/".format(APP_NAME))
     template_patch = open("base_t.patch".format(APP_NAME))
     sh.patch(strip=0, _in=template_patch)
     template_patch.close()
     os.chdir(PROJ_DIR)
 
-    # Jquery
-    print blue("Installing jquery 1.9.0.")
+    # jQuery
+    print(blue("Installing jquery 1.9.0."))
     os.chdir(PROJ_DIR + "/" + APP_NAME + "/static/js")
     sh.curl("http://code.jquery.com/jquery-1.9.0.min.js", O=True)
     os.chdir(PROJ_DIR)
-
 
 
 @task
@@ -156,16 +158,19 @@ def console():
     '''Load the application in an interactive console.'''
     local('env DEV=yes python -i runserver.py', capture=False)
 
+
 @task
 def server():
     '''Run the dev server'''
     os.chdir(PROJ_DIR)
     local('env DEV=yes python runserver.py', capture=False)
 
+
 @task
 def test():
     '''Run the test suite'''
     local('env TEST=yes python tests.py', capture=False)
+
 
 @task
 def clean():
