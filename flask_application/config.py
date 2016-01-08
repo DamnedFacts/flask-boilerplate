@@ -4,7 +4,7 @@
 
 class Config(object):
     SECRET_KEY = ''
-    SITE_NAME = 'example.com'
+    SITE_NAME = ''
     MEMCACHED_SERVERS = ['localhost:11211']
     SYS_ADMINS = ['foo@example.com']
 

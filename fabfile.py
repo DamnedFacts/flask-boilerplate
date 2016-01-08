@@ -5,10 +5,10 @@
 Run 'fab --list' to see list of available commands.
 
 References:
-# http://docs.fabfile.org/en/1.0.1/usage/execution.html#how-host-lists-are-constructed
+# http://docs.fabfile.org/en/1.0.1/usage/execution.html
 '''
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 import platform
 assert ('2', '6') <= platform.python_version_tuple() < ('3', '0')
 
@@ -85,10 +85,9 @@ def env_init(site_name=SITE_NAME):
     print(blue("Configuring the secret key..."))
     os.chdir(PROJ_DIR)
     try:
-        sh.sed("-i.bak",
-               "-e s/SECRET_KEY *= *.*/SECRET_KEY = '{0}'/g".format(SECRET_KEY),
+        sh.sed("-i ''",
+               "-e s/SECRET_KEY *=.*/SECRET_KEY = '{0}'/g".format(SECRET_KEY),
                "{0}/config.py".format(APP_NAME))
-        sh.rm(f="config.py.bak")
     except sh.ErrorReturnCode:
         print(red("Could not configure SECRET_KEY for config.py"))
         exit(1)
@@ -98,8 +97,8 @@ def env_init(site_name=SITE_NAME):
     #
     print(blue("Configuring the SITE_NAME '{0}'.".format(site_name)))
     try:
-        sh.sed("-i.bak",
-               "-es/SITE_NAME\s*=\s*.*/SITE_NAME = '{0}'/g".format(site_name),
+        sh.sed("-i ''", 
+               "-e s/SITE_NAME *=.*/SITE_NAME = '{0}'/g".format(site_name),
                "{0}/config.py".format(APP_NAME))
         sh.rm(f="config.py.bak")
     except sh.ErrorReturnCode:
@@ -130,13 +129,14 @@ def skeletonize():
     os.chdir(PROJ_DIR)
     sh.git.submodule.update(init=True)
 
-    os.chdir(PROJ_DIR + "/skeleton")
+    os.chdir(PROJ_DIR + "/Skeleton")
     sh.git.pull("origin", "master")
     sh.rsync("-av", "images", "{0}/{1}/static/".format(PROJ_DIR, APP_NAME))
     sh.rsync("-av", "css", "{0}/{1}/static/".format(PROJ_DIR, APP_NAME))
-    sh.rsync("-av", "index.html", "{0}/{1}/templates/base_t.html".format(PROJ_DIR, APP_NAME))
+    sh.rsync("-av", "index.html", 
+             "{0}/{1}/templates/base_t.html".format(PROJ_DIR, APP_NAME))
     os.chdir(PROJ_DIR)
-    sh.rm("-r", PROJ_DIR + "/skeleton")
+    sh.rm("-r", PROJ_DIR + "/Skeleton")
 
     # Patch the base template with templating tags
     print(blue("Patching the base template."))
@@ -175,7 +175,8 @@ def test():
 @task
 def clean():
     '''Clear the cached .pyc files.'''
-    local("find . \( -iname '*.pyc' -o -name '*~' \) -exec rm -v {} \;", capture=False)
+    local("find . \( -iname '*.pyc' -o -name '*~' \) -exec rm -v {} \;", 
+          capture=False)
 """
 @task
 def server_setup():
@@ -183,8 +184,10 @@ def server_setup():
     global SITE_NAME
 
     local_dir = os.getcwd()
-    remote_dir = os.path.join('/home', os.getlogin(), 'web', SITE_NAME, 'private', SITE_NAME)
+    remote_dir = os.path.join('/home', os.getlogin(), 'web', SITE_NAME, 
+                              'private', SITE_NAME)
     run('mkdir -p {0}'.format(remote_dir))
     _transfer_files(local_dir, env.host + ':' + remote_dir, ssh_port=env.port)
-    run('cd {0} && bash setup/server_setup.bash {1}'.format(remote_dir, SITE_NAME))
+    run('cd {0} && bash setup/server_setup.bash {1}'.format(remote_dir, 
+                                                            SITE_NAME))
 """
