@@ -9,7 +9,6 @@ References:
 '''
 
 from __future__ import with_statement, print_function
-import platform
 import os
 import sh
 import sys
@@ -77,7 +76,7 @@ def env_init(site_name=SITE_NAME):
     import random
     import string
 
-    CHARS = string.letters + string.digits
+    CHARS = string.ascii_letters + string.digits
     SECRET_KEY = "".join([random.choice(CHARS) for i in range(50)])
 
     print(blue("Configuring the secret key..."))
@@ -110,10 +109,6 @@ def env_setup():
 
     # Install our requistite modules for the website.
     sh.pip("install", r="requirements.txt")
-
-    import platform
-    if platform.python_version_tuple() < (2, 7):
-        sh.pip("install", "unittest2")
 
 
 @task

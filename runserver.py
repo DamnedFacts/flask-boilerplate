@@ -9,7 +9,7 @@ def show(obj):
 if sys.flags.interactive:
     from flask_application import *
     #from flask_application.models import *
-    print 'Loading Flask App in console mode. Use show(<obj)> to introspect.'
+    print('Loading Flask App in console mode. Use show(<obj)> to introspect.')
 elif __name__ == '__main__':
     from flask_application import app
     app.debug = True
