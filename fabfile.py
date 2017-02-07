@@ -10,8 +10,6 @@ References:
 
 from __future__ import with_statement, print_function
 import platform
-assert ('2', '6') <= platform.python_version_tuple() < ('3', '0')
-
 import os
 import sh
 import sys
@@ -132,7 +130,7 @@ def skeletonize():
     sh.git.pull("origin", "master")
     sh.rsync("-av", "images", "{0}/{1}/static/".format(PROJ_DIR, APP_NAME))
     sh.rsync("-av", "css", "{0}/{1}/static/".format(PROJ_DIR, APP_NAME))
-    sh.rsync("-av", "index.html", 
+    sh.rsync("-av", "index.html",
              "{0}/{1}/templates/base_t.html".format(PROJ_DIR, APP_NAME))
     os.chdir(PROJ_DIR)
 
@@ -173,7 +171,7 @@ def test():
 @task
 def clean():
     '''Clear the cached .pyc files.'''
-    local("find . \( -iname '*.pyc' -o -name '*~' \) -exec rm -v {} \;", 
+    local("find . \( -iname '*.pyc' -o -name '*~' \) -exec rm -v {} \;",
           capture=False)
 """
 @task
@@ -182,10 +180,10 @@ def server_setup():
     global SITE_NAME
 
     local_dir = os.getcwd()
-    remote_dir = os.path.join('/home', os.getlogin(), 'web', SITE_NAME, 
+    remote_dir = os.path.join('/home', os.getlogin(), 'web', SITE_NAME,
                               'private', SITE_NAME)
     run('mkdir -p {0}'.format(remote_dir))
     _transfer_files(local_dir, env.host + ':' + remote_dir, ssh_port=env.port)
-    run('cd {0} && bash setup/server_setup.bash {1}'.format(remote_dir, 
+    run('cd {0} && bash setup/server_setup.bash {1}'.format(remote_dir,
                                                             SITE_NAME))
 """
