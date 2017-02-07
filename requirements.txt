@@ -1,5 +1,5 @@
 Flask
 Flask-WTF
 WTForms
-Fabric
+Fabric3
 sh
