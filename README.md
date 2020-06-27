@@ -24,7 +24,7 @@ First, install all required modules:
 -   `pip install -r requirements.txt`
 
 Then, build and customize the boilerplate:
--   `fab init site-name=<sitename>`
+-   `fab init --site-name=<sitename>`
     - Where "`<sitename>`" is replaced with the hostname of your new site
 -   `fab server`
     - Will run a local dev server on `http://localhost:8080`
