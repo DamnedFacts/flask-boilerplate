@@ -5,23 +5,26 @@
 Run 'fab --list' to see list of available commands.
 
 References:
-# http://docs.fabfile.org/en/1.0.1/usage/execution.html
+# http://docs.fabfile.org/
 '''
 
 from __future__ import with_statement, print_function
 import os
 import sh
 import sys
+import random
+import string
 
-from fabric.api import env, local, run, task
-from fabric.api import cd
-from fabric.colors import red, green, blue
+from colorama import Fore, Back, Style
+from invoke import task, env
 
-APP_NAME = "flask_application"
+from fabric import Connection, SerialGroup
+
+APP_NAME = "app"
 PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
 SITE_NAME = "example.com"
 
-env.hosts = ['user@remotehost']
+hosts = ['user@remotehost']
 code_dir = '/path/to/repos/destination'
 sys.path.append(PROJ_DIR)
 
@@ -34,90 +37,86 @@ def _transfer_files(src, dst, ssh_port=None):
     if dst.endswith('/'):
         dst = dst[:-1]
     local('rsync -avh --delete-before --copy-unsafe-links -e'
-          '"ssh -p {0}" {1} {2}'.format(ssh_port, src, dst), capture=False)
+          '"ssh -p {0}" {1} {2}'.format(ssh_port, src, dst))
 """
 
 
 @task
-def pre_deploy():
+def pre_deploy(c):
     '''Add, commit and push the Git repo before final deployment.'''
-    local("git add -p && git commit")
-    local("git push")
+    local("git add -p && git commit && git push")
 
 
 @task
-def deploy():
-    global code_dir
+def deploy(c):
     '''Final deployment of the application'''
-    with cd(code_dir):
-        run("git pull")
-        run("touch flask_application.wsgi")
-        # run("sudo apachectl restart")
+    with c.cd(code_dir):
+        for cxn in SerialGroup(hosts):
+            cxn.run("git pull")
+            cxn.run(f"touch {APP_NAME}.wsgi")
+            # run("sudo apachectl restart")
 
 
 @task
-def init(site_name=SITE_NAME):
+def init(c, site_name=SITE_NAME):
     '''Call env_setup, env_init, and skeletonize for one-step init'''
-    print(green("Call env_setup, env_init, and"
-                "skeletonize for one-step init:"))
-    env_setup()
-    env_init(site_name=site_name)
-    skeletonize()
+    print(Fore.GREEN + "Call env_setup, env_init, and"
+          "skeletonize for one-step init:")
+    env_setup(c)
+    env_init(c, site_name=site_name)
+    skeletonize(c)
 
 
 @task
-def env_init(site_name=SITE_NAME):
+def env_init(c, site_name=SITE_NAME):
     '''Initialize with this site hostname.'''
-    print(green("Initializing new site configuration..."))
+    print(Fore.GREEN + "Initializing new site configuration...")
 
     #
     # Generate secret key and update config file
     #
-    import random
-    import string
-
     CHARS = string.ascii_letters + string.digits
     SECRET_KEY = "".join([random.choice(CHARS) for i in range(50)])
 
-    print(blue("Configuring the secret key..."))
-    os.chdir(PROJ_DIR)
-    try:
-        sh.sed("-i ",
-               "s/SECRET_KEY *=.*/SECRET_KEY = '{0}'/g".format(SECRET_KEY),
-               "{0}/config.py".format(APP_NAME))
-    except sh.ErrorReturnCode:
-        print(red("Could not configure SECRET_KEY for config.py"))
-        exit(1)
+    print(Fore.BLUE + "Configuring the secret key...")
+    with c.cd(PROJ_DIR):
+        try:
+            sh.sed("-i ",
+                   "s/SECRET_KEY *=.*/SECRET_KEY = '{0}'/g".format(SECRET_KEY),
+                   "{0}/config.py".format(APP_NAME))
+        except sh.ErrorReturnCode:
+            print(Fore.RED + "Could not configure SECRET_KEY for config.py")
+            exit(1)
 
     #
     # Set the site name, the user defined site hostname
     #
-    print(blue("Configuring the SITE_NAME '{0}'.".format(site_name)))
+    print(Fore.BLUE + "Configuring the SITE_NAME '{0}'.".format(site_name))
     try:
         sh.sed("-i ",
                "s/SITE_NAME *=.*/SITE_NAME = '{0}'/g".format(site_name),
                "{0}/config.py".format(APP_NAME))
     except sh.ErrorReturnCode:
-        print(red("Could not configure SITE_NAME for config.py"))
+        print(Fore.RED + "Could not configure SITE_NAME for config.py")
         exit(1)
 
 
 @task
-def env_setup():
+def env_setup(c):
     '''Initialize environment with requisite Python modules.'''
-    print(green("Installing requisite modules..."))
+    print(Fore.GREEN + "Installing requisite modules...")
 
     # Install our requistite modules for the website.
     sh.pip("install", r="requirements.txt")
 
 
 @task
-def skeletonize():
+def skeletonize(c):
     '''Update Skeleton HTML5-Boilerplate.'''
-    print(green("Skeletonizing the project directory..."))
+    print(Fore.GREEN + "Skeletonizing the project directory...")
 
     # Skeleton
-    print(blue("Installing skeleton HTML5 Boilerplate."))
+    print(Fore.BLUE + "Installing skeleton HTML5 Boilerplate.")
     os.chdir(PROJ_DIR)
     sh.git.submodule.update(init=True)
 
@@ -130,7 +129,7 @@ def skeletonize():
     os.chdir(PROJ_DIR)
 
     # Patch the base template with templating tags
-    print(blue("Patching the base template."))
+    print(Fore.BLUE + "Patching the base template.")
     os.chdir(PROJ_DIR + "/{0}/templates/".format(APP_NAME))
     template_patch = open("base_t.patch".format(APP_NAME))
     sh.patch(strip=0, _in=template_patch)
@@ -138,39 +137,41 @@ def skeletonize():
     os.chdir(PROJ_DIR)
 
     # jQuery
-    print(blue("Installing jquery 1.9.0."))
+    print(Fore.BLUE + "Installing jquery 1.9.0.")
     os.chdir(PROJ_DIR + "/" + APP_NAME + "/static/js")
-    sh.curl("http://code.jquery.com/jquery-1.9.0.min.js", O=True)
+    sh.curl("http://code.jquery.com/jquery-1.9.0.min.js")
     os.chdir(PROJ_DIR)
 
 
 @task
-def console():
+def console(c):
     '''Load the application in an interactive console.'''
-    local('env DEV=yes python -i runserver.py', capture=False)
+    c.run('env DEV=yes python -i runserver.py')
 
 
 @task
-def server():
+def server(c):
     '''Run the dev server'''
-    os.chdir(PROJ_DIR)
-    local('env DEV=yes python runserver.py', capture=False)
+    
+    with c.cd(PROJ_DIR):
+        env = os.environ.copy()
+        env['DEV'] = 'yes'
+        c.run('./runserver.py', env=env)
 
 
 @task
-def test():
+def test(c):
     '''Run the test suite'''
-    local('env TEST=yes python tests.py', capture=False)
+    c.run('env TEST=yes python tests.py')
 
 
 @task
-def clean():
+def clean(c):
     '''Clear the cached .pyc files.'''
-    local("find . \( -iname '*.pyc' -o -name '*~' \) -exec rm -v {} \;",
-          capture=False)
+    c.run("find . \( -iname '*.pyc' -o -name '*~' \) -exec rm -v {} \;")
 """
 @task
-def server_setup():
+def server_setup(c):
     '''Setup the server environment.'''
     global SITE_NAME
 

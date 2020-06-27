@@ -1,0 +1,5 @@
+*.pyc
+__pycache__
+favicon.png
+jquery-*.min.js
+base_t.html

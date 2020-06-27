@@ -1,5 +1,5 @@
 from flask import Flask, session, render_template, request_started
-from werkzeug import SharedDataMiddleware
+from werkzeug.middleware.shared_data import SharedDataMiddleware
 import os
 
 # create our application
@@ -7,10 +7,10 @@ app = Flask(__name__)
 
 # Config
 if app.config['DEBUG']:
-    app.config.from_object('flask_application.config.DevelopmentConfig')
+    app.config.from_object('app.config.DevelopmentConfig')
     app.logger.info("Config: Development")
 else:
-    app.config.from_object('flask_application.config.ProductionConfig')
+    app.config.from_object('app.config.ProductionConfig')
     app.logger.info("Config: Production")
 
 

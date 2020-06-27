@@ -4,8 +4,8 @@
 
 
 class Config(object):
-    SECRET_KEY = ''
-    SITE_NAME = ''
+    SECRET_KEY = 'bzNsEap7HGJeOGzAxhNlQCtaRpccRZHgWaOncxAKpCJovJgJbN'
+    SITE_NAME = 'profiler'
     MEMCACHED_SERVERS = ['localhost:11211']
     SYS_ADMINS = ['foo@example.com']
 
