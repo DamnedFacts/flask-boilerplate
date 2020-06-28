@@ -4,6 +4,7 @@ import os
 
 # create our application
 app = Flask(__name__)
+application = app  # for gunicorn when importing this package
 
 # Config
 if app.config['DEBUG']:
